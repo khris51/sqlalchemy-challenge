@@ -1,9 +1,11 @@
 # Import the dependencies.
-from flask import Flask
+from flask import Flask,jsonify
 import sqlalchemy
 from sqlalchemy.orm import Session
 from sqlalchemy import func, create_engine
 from sqlalchemy.ext.automap import automap_base
+import datetime
+
 
 #################################################
 # Database Setup
@@ -56,7 +58,37 @@ def station ():
     return [ {id:loc} for id,loc in results]   
 
 @app.route('/api/v1.0/tobs')
-def station ():
+def tobs ():
     results = session.query(S.name, S.tobs).filter(station == 'USC00519281').all()
 
     return[{name:tobs} for name,tobs in results]   
+
+@app.route('/api/v1.0/<start>')
+def temperature_start(start):
+    # Query temperature data for dates greater than or equal to start date
+   
+    results = session.query(func.min(M.tobs), func.avg(M.tobs), func.max(M.tobs)).\
+              filter(M.date >= start).all()
+
+    # Constructing a JSON response
+    data = [{"TMIN": result[0], "TAVG": result[1], "TMAX": result[2]} for result in results]
+
+    # Returning the JSON response
+    return jsonify(data)
+
+@app.route('/api/v1.0/<start>/<end>')
+def temperature_range_start_end(start, end):
+    # Query temperature data for dates between start and end dates
+     
+    
+     results = session.query(func.min(M.tobs), func.avg(M.tobs), func.max(M.tobs)).\
+              filter(M.date>= start).filter(M.date <= end).all()
+     print(results)
+    # Constructing a JSON response
+     data = [{"TMIN": result[0], "TAVG": result[1], "TMAX": result[2]} for result in results]
+
+    # Returning the JSON response
+     return jsonify(data)
+
+if __name__ == '__main__':
+    app.run(debug=True)
